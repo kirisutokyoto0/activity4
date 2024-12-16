@@ -10,12 +10,14 @@ const Scene = () => {
     const actionsRef = useRef([]);  // Array to hold references to all animation actions
     const [loadingProgress, setLoadingProgress] = useState(0); // State for loading progress
     const [isPlaying, setIsPlaying] = useState(true);  // State for animation play/pause
+    const [isMusicPlaying, setIsMusicPlaying] = useState(true);  // State for music play/pause
     const objectsRef = useRef([]);  // Array to hold references to the objects
+    const audioRef = useRef(null);  // Reference to the audio object
 
     useEffect(() => {
         // Set up the scene, camera, and renderer
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xffffff); // Set the scene background to white
+        scene.background = new THREE.Color(0x000000); // Set the scene background to white
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
         // Create an audio listener and add it to the camera
@@ -24,6 +26,7 @@ const Scene = () => {
 
         // Create an audio object (this will be the background music)
         const audio = new THREE.Audio(listener);
+        audioRef.current = audio; // Store reference to audio
 
         // Load the audio file (make sure to replace with your own path)
         const audioLoader = new THREE.AudioLoader();
@@ -33,7 +36,9 @@ const Scene = () => {
                 audio.setBuffer(buffer);
                 audio.setLoop(true);  // Make the music loop
                 audio.setVolume(0.5);  // Set the volume (0.0 to 1.0)
-                audio.play();  // Start playing the audio
+                if (isMusicPlaying) {
+                    audio.play();  // Start playing the audio initially
+                }
             },
             (xhr) => {
                 // You can show loading progress for the audio file if desired
@@ -207,10 +212,20 @@ const Scene = () => {
                 actionsRef.current.forEach(action => {
                     action.timeScale = 0;  // Set timeScale to 0 for all actions
                 });
-            }
+            },
+            MusicPlay: () => {
+                setIsMusicPlaying(true);  // Play the music
+                audioRef.current.play();  // Ensure music is playing
+            },
+            MusicPause: () => {
+                setIsMusicPlaying(false);  // Pause the music
+                audioRef.current.pause();  // Pause the music
+            },
         };
         gui.add(guiSettings, 'Play');  // Add play button to the GUI
         gui.add(guiSettings, 'Pause');  // Add pause button to the GUI
+        gui.add(guiSettings, 'MusicPlay');  // Add music play button to the GUI
+        gui.add(guiSettings, 'MusicPause');  // Add music pause button to the GUI
 
         // Clean up on unmount
         return () => {
@@ -219,7 +234,7 @@ const Scene = () => {
             window.removeEventListener('resize', onWindowResize);
             gui.destroy();  // Destroy the GUI to prevent memory leaks
         };
-    }, []); // Dependency array ensures it runs once on mount
+    }, []); // Add dependencies for state updates
 
     return (
         <div style={{ margin: 0, padding: 0, height: '100vh', overflow: 'hidden' }}>
